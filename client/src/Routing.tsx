@@ -1,0 +1,17 @@
+import { FC } from "react"
+import { BrowserRouter, Route, Routes } from "react-router-dom"
+import Home from "./pages/Home"
+import Questions from "./pages/Questions"
+
+const Routing:FC = () => {
+  return (
+    <BrowserRouter>
+    <Routes>
+        <Route path="/" element={<Home />}></Route>
+        <Route path="/questions" element={<Questions />}></Route>
+    </Routes>
+    </BrowserRouter>
+  )
+}
+
+export default Routing
