@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const route = require('./src/routes/router')
 require('./src/database/connect')
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
 
 app.use(cors({
     origin: true,

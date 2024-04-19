@@ -1,10 +1,10 @@
 import { FC } from "react"
 
 interface ImageProps {
-    index: string;
+    index?: string;
     imageData: number[];
     contentType: string;
-    handleDelete: () => void;
+    handleDelete?: () => void;
 }
 
 const ImageComponent: FC<ImageProps> = ({ index, imageData, contentType, handleDelete }) => {
@@ -23,7 +23,7 @@ const ImageComponent: FC<ImageProps> = ({ index, imageData, contentType, handleD
                 cursor: 'pointer',
                 backgroundColor: 'transparent',
                 border: 'none',
-            }}>Delete</button>
+            }}>Remove</button>
         </div>
     )
 }
