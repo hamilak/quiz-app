@@ -101,3 +101,5 @@ dist
 !.vscode/extensions.json
 .github/workflows/deploy.sh 
 .github/workflows/deploy-docker.yaml
+
+.DS_Store
