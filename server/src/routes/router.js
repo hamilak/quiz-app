@@ -16,11 +16,11 @@ route.delete('/deleteImage/:id', imageController.deleteImage)
 
 // questions routes
 
-route.post('/createQuestion', questionController.createQuestion)
+route.post('/createQuestion', imageUpload.array('image', 6), questionController.createQuestion)
 
 route.get('/getAllQuestions', questionController.getAllQuestions)
 
-route.get('/getOneQuestion', questionController.getOneQuestion)
+route.get('/getOneQuestion/:quizId', questionController.getOneQuestion)
 
 route.put('/updateQuestion', questionController.updateQuestion)
 

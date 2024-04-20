@@ -1,43 +1,7 @@
-import React, { ChangeEvent, FC, FormEvent, useState } from "react"
+import React, { ChangeEvent, FC, FormEvent, MouseEvent, useEffect, useState } from "react"
 import ImageComponent from "../components/ImageComponent";
 import { api } from "../apiService";
-
-interface ImageProps {
-    contentType: string;
-    data: DataProps;
-}
-
-interface DataProps {
-    data: number[];
-    type: string
-}
-
-interface AnswerProps {
-    text: string
-    isCorrect: boolean
-    images: ImageProps
-}
-
-interface QuestionProps {
-    description: string
-    image: ImageProps
-    answer: AnswerProps[]
-}
-
-interface FormValueProps {
-    title: string
-    questions: QuestionProps[]
-}
-
-interface QuestionErrors {
-    description?: string
-    image?: string | undefined
-}
-
-interface FormValidationErrors {
-    title?: string
-    questions?: QuestionErrors[]
-}
+import { FormValueProps, ImageProps, QuizProp, QuestionProps, FormValidationErrors, AnswerProps } from "../Types";
 
 const validateString = (input: string, fieldName: string) => {
     if (!input) {
@@ -59,7 +23,7 @@ const Questions: FC = () => {
                     type: ''
                 }
             },
-            answer: [{
+            answers: [{
                 text: '',
                 isCorrect: false,
                 images: {
@@ -72,79 +36,16 @@ const Questions: FC = () => {
             }]
         }]
     })
+    const [quizzes, setQuizzes] = useState<QuizProp[]>([])
+    const [questions, setQuestions] = useState<QuestionProps[]>([])
     const [validationErrors, setValidationErrors] = useState<FormValidationErrors>({})
     const [optionsError, setOptionsError] = useState<string>('')
 
-    // const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
-    //     e.preventDefault()
-    //     console.log("image:", formValues.image)
-    // }
     const handleInputChange = (name: string, value: string) => {
         setFormValues((prevValues) => ({
             ...prevValues, [name]: value
         }))
     }
-
-    const handleQuestionChange = (description: string, image: ImageProps, answer: AnswerProps[], index: number) => {
-        const updatedQuestion = {
-            description,
-            image,
-            answer
-        };
-        setFormValues((prevValues) => {
-            const currentQuestion = prevValues.questions || []
-            const updatedQuestions = [...currentQuestion]
-
-            if (index !== undefined && index < updatedQuestions.length) {
-                updatedQuestions[index] = updatedQuestion;
-            } else {
-                updatedQuestions.push(updatedQuestion)
-            }
-
-            return {
-                ...prevValues,
-                questions: updatedQuestions
-            }
-        })
-    }
-
-    const handleAnswerChange = (text: string, isCorrect: boolean, image: ImageProps, questionIndex: number, answerIndex: number) => {
-        const updatedAnswer = {
-            text,
-            isCorrect,
-            images: image,
-        };
-        setFormValues((prevValues) => {
-            const updatedQuestions = [...prevValues.questions];
-            if (questionIndex !== undefined && questionIndex < updatedQuestions.length) {
-                const updatedAnswers = [...updatedQuestions[questionIndex].answer];
-                if (answerIndex !== undefined && answerIndex < updatedAnswers.length) {
-                    updatedAnswers[answerIndex] = updatedAnswer;
-                } else {
-                    updatedAnswers.push(updatedAnswer);
-                }
-                updatedQuestions[questionIndex].answer = updatedAnswers;
-            }
-            return { ...prevValues, questions: updatedQuestions };
-        });
-    };
-
-    const removeAnswer = (questionIndex: number, answerIndex: number) => {
-        const updatedQuestions = [...formValues.questions];
-        if (
-            questionIndex !== undefined &&
-            questionIndex < updatedQuestions.length &&
-            answerIndex !== undefined &&
-            answerIndex < updatedQuestions[questionIndex].answer.length
-        ) {
-            updatedQuestions[questionIndex].answer.splice(answerIndex, 1);
-            setFormValues({ ...formValues, questions: updatedQuestions });
-        }
-    };
-
-    // const handleAnswerChange = () => {
-
-    // }
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>, questionIndex: number, answerIndex: number | undefined) => {
         if (event.target.files && event.target.files.length > 0) {
@@ -162,8 +63,8 @@ const Questions: FC = () => {
                     setFormValues((prevValues) => {
                         const updatedQuestions = [...prevValues.questions];
                         if (questionIndex !== undefined && questionIndex < updatedQuestions.length) {
-                            if (answerIndex !== undefined && answerIndex < updatedQuestions[questionIndex].answer.length) {
-                                updatedQuestions[questionIndex].answer[answerIndex].images = imageData;
+                            if (answerIndex !== undefined && answerIndex < updatedQuestions[questionIndex].answers.length) {
+                                updatedQuestions[questionIndex].answers[answerIndex].images = imageData;
                             } else {
                                 updatedQuestions[questionIndex].image = imageData;
                             }
@@ -176,7 +77,146 @@ const Questions: FC = () => {
         }
     };
 
-    const handleAddQuestion = async(e: FormEvent<HTMLFormElement>) => {
+    const handleQuestionChange = (description: string, image: ImageProps, answers: AnswerProps[], index: number) => {
+        const updatedQuestion = {
+            description,
+            image,
+            answers
+        };
+        setFormValues((prevValues) => {
+            const currentQuestion = prevValues.questions || []
+            const updatedQuestions = [...currentQuestion]
+
+            if (index !== undefined && index < updatedQuestions.length) {
+                updatedQuestions[index] = updatedQuestion;
+            } else {
+                updatedQuestions.push(updatedQuestion)
+            }
+
+            return {
+                ...prevValues,
+                questions: updatedQuestions
+            }
+        })
+    }
+    const handleAddQuestion = (e: MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        const errors: FormValidationErrors = {}
+        const questionErrors: { description?: string; image?: string }[] = [];
+        formValues.questions.forEach(question => {
+            const descriptionError = validateString(question.description, 'Description');
+            if (descriptionError) {
+                questionErrors.push({ description: descriptionError });
+            }
+    
+            if (question.image.data.data.length === 0) {
+                questionErrors.push({ image: 'Please upload an image' });
+            }
+        });
+    
+        if(questionErrors.length > 0) {
+            errors.questions = questionErrors
+        }
+        setValidationErrors(errors)
+    
+        if (questionErrors.length === 0) {      
+            let hasError = false;
+            formValues.questions.forEach(question => {
+                if (question.answers.length < 2) {
+                    hasError = true;
+                }
+            });
+    
+            if (hasError) {
+                console.log('option error')
+                setOptionsError('You must add more than one answer for each question');
+                return;
+            }
+            setOptionsError('');
+    
+            const newQuestion: QuestionProps = {
+                description: formValues.questions[0].description,
+                image: formValues.questions[0].image,
+                answers: formValues.questions[0].answers
+            };
+    
+            setQuestions(prevQuestions => [...prevQuestions, newQuestion]);
+    
+            setFormValues(prevValues => ({
+                ...prevValues,
+                questions: [
+                    ...prevValues.questions,
+                    {
+                        description: '',
+                        image: {
+                            contentType: '',
+                            data: {
+                                data: [],
+                                type: ''
+                            }
+                        },
+                        answers: [{
+                            text: '',
+                            isCorrect: false,
+                            images: {
+                                contentType: '',
+                                data: {
+                                    data: [],
+                                    type: ''
+                                }
+                            }
+                        }]
+                    }
+                ]
+            }));
+
+        }
+    };    
+
+    const removeQuestion = (index: number) => {
+        setFormValues(prevState => ({
+            ...prevState,
+            questions: prevState.questions.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleAnswerChange = (text: string, isCorrect: boolean, image: ImageProps, questionIndex: number, answerIndex: number) => {
+        const updatedAnswer = {
+            text,
+            isCorrect,
+            images: image,
+        };
+        setFormValues((prevValues) => {
+            const updatedQuestions = [...prevValues.questions];
+            if (questionIndex !== undefined && questionIndex < updatedQuestions.length) {
+                const updatedAnswers = [...updatedQuestions[questionIndex].answers];
+                if (answerIndex !== undefined && answerIndex < updatedAnswers.length) {
+                    updatedAnswers[answerIndex] = updatedAnswer;
+                } else {
+                    updatedAnswers.push(updatedAnswer);
+                }
+                updatedQuestions[questionIndex].answers = updatedAnswers;
+            }
+            return { ...prevValues, questions: updatedQuestions };
+        });
+    };
+
+    const removeAnswer = (questionIndex: number, answerIndex: number) => {
+        const updatedQuestions = [...formValues.questions];
+        if (
+            questionIndex !== undefined &&
+            questionIndex < updatedQuestions.length &&
+            answerIndex !== undefined &&
+            answerIndex < updatedQuestions[questionIndex].answers.length
+        ) {
+            updatedQuestions[questionIndex].answers.splice(answerIndex, 1);
+            setFormValues({ ...formValues, questions: updatedQuestions });
+        }
+    };
+
+    console.log(questions)
+
+    const createQuiz = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const errors: FormValidationErrors = {};
         const titleError = validateString(formValues.title, 'Title');
@@ -185,52 +225,41 @@ const Questions: FC = () => {
             errors.title = titleError
         };
 
-        const questionErrors: { description?: string; image?: string }[] = [];
-        formValues.questions.forEach(question => {
-            const descriptionError = validateString(question.description, 'Description');
-            if (descriptionError) {
-                questionErrors.push({ description: descriptionError });
-            }
-
-            if (question.image.data.data.length === 0) {
-                questionErrors.push({ image: 'Please upload an image' });
-            }
-        });
-        if (questionErrors.length > 0) {
-            errors.questions = questionErrors;
-        };
-
         setValidationErrors(errors)
+
         if (Object.keys(errors).length === 0) {
-            let hasError = false;
-            formValues.questions.forEach(question => {
-                if (question.answer.length < 2) {
-                    hasError = true;
-                }
-            });
-
-            if (hasError) {
-                console.log('option error')
-                setOptionsError('You must add more than one answer for each question');
-                return;
-            }
-            setOptionsError('');
-
             try {
                 console.log(formValues)
-                const response = await api.post('/createQuestion', formValues,
-                {
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                })
+                const response = await api.post('/createQuestion', {title: formValues.title, questions: formValues.questions},
+                    // {
+                    //     headers: {
+                    //         "Content-Type": "application/json"
+                    //     }
+                    // }
+                )
                 console.log(response)
             } catch (error) {
-                
+
             }
         }
     }
     console.log(validationErrors)
+
+    useEffect(() => {
+        const getAllQuiz = async () => {
+            try {
+                const response = await api.get('/getAllQuestions')
+                if (response.status === 200) {
+                    console.log(response)
+                    setQuizzes(response.data.quiz)
+                }
+            } catch (error) {
+
+            }
+        }
+
+        getAllQuiz()
+    }, [])
 
     return (
         <>
@@ -244,7 +273,7 @@ const Questions: FC = () => {
                             <p className="text-red-500">{optionsError}</p>
                         </div>
                     )}
-                    <form onSubmit={handleAddQuestion}>
+                    <form onSubmit={createQuiz}>
                         <div style={formControl}>
                             <label htmlFor="title">
                                 Quiz title
@@ -257,14 +286,17 @@ const Questions: FC = () => {
                             </div>
                         )}
                         <div style={formControl}>
-                            <label htmlFor="questions">Questions</label>
+                            <div className="flex justify-between">
+                                <label htmlFor="questions">Questions</label>
+                                <button onClick={handleAddQuestion} className="underline">Add</button>
+                            </div>
                         </div>
                         {formValues.questions && formValues.questions.map((question, questionIndex) => (
                             <React.Fragment key={questionIndex}>
                                 <div style={formControl}>
                                     <label>Question description</label>
                                     <br />
-                                    <input value={question.description} style={inputStyle} type="text" onChange={(e) => handleQuestionChange(e.target.value, question.image, question.answer, questionIndex)} />
+                                    <input value={question.description} style={inputStyle} type="text" onChange={(e) => handleQuestionChange(e.target.value, question.image, question.answers, questionIndex)} />
                                     <br />
                                 </div>
                                 {validationErrors.questions && (
@@ -290,13 +322,13 @@ const Questions: FC = () => {
                                 <div className="flex justify-between">
                                     <h5 className="text-l font-bold">Answers (Tick the box for the correct answer)</h5>
                                     <div>
-                                        {question.answer.length < 5 && (
-                                            <button className="underline" onClick={(e) => { e.preventDefault(); handleAnswerChange('', false, { contentType: '', data: { data: [], type: '' } }, questionIndex, question.answer.length) }}>Add</button>
+                                        {question.answers.length < 5 && (
+                                            <button className="underline" onClick={(e) => { e.preventDefault(); handleAnswerChange('', false, { contentType: '', data: { data: [], type: '' } }, questionIndex, question.answers.length) }}>Add</button>
                                         )}
                                     </div>
                                 </div>
                                 <br />
-                                {question.answer && question.answer.map((option, answerIndex) => (
+                                {question.answers && question.answers.map((option, answerIndex) => (
                                     <>
                                         <div className="flex justify-between">
                                             <label>Option {answerIndex + 1}</label>
@@ -326,32 +358,59 @@ const Questions: FC = () => {
                 <br />
                 <div>
                     <div>
-                        <h5 className="font-bold text-2xl">Preview</h5>
+                        <h5 className="font-bold text-2xl">Questions</h5>
                     </div>
                     <br />
-                    <ul>
-                        <li>{formValues.title}</li>
-                        {formValues.questions && formValues.questions.map((question, index) => (
-                            <>
-                                {index > 0 && (
-                                    <>
-                                        <li>{question.description}</li>
-                                        <li key={index.toString()}>
-                                            <ImageComponent index={index.toString()} imageData={question.image.data.data} contentType={question.image.contentType} />
-                                        </li>
-                                        {question.answer.map((item, answerIndex) => (
-                                            <>
-                                                <p>{item.text}</p>
-                                                <li key={index.toString()}>
-                                                    <ImageComponent index={answerIndex.toString()} imageData={item.images.data.data} contentType={item.images.contentType} />
-                                                </li>
-                                            </>
-                                        ))}
-                                    </>
-                                )}
-                            </>
-                        ))}
-                    </ul>
+                    {questions.map((question, index) => (
+                        <ul>
+                                <div>
+                                    <li>{question.description}</li>
+                                    <button onClick={() => removeQuestion(index)} className="underline">Remove</button>
+                                </div>
+                                    <li key={index.toString()}>
+                                        <ImageComponent index={index.toString()} imageData={question.image.data.data} contentType={question.image.contentType} />
+                                    </li>
+                                    {question.answers.map((item, answerIndex) => (
+                                        <>
+                                            <p>{item.text}</p>
+                                            <li key={index.toString()}>
+                                                <ImageComponent index={answerIndex.toString()} imageData={item.images.data.data} contentType={item.images.contentType} />
+                                            </li>
+                                        </>
+                                    ))}
+                        </ul>
+                    ))}
+
+                </div>
+                <div>
+                    <h5>Questions</h5>
+                    {quizzes && quizzes.map((quiz) => (
+                        <>
+                            {Object.values(quiz.quizzes).map((item) => (
+                                <>
+                                    <p>{item.title}</p>
+                                    {item.questions.map((ques, index) => (
+                                        <>
+                                        <p>{ques.description}</p>
+                                            <ImageComponent index={index.toString()} imageData={ques.image.data.data} contentType={ques.image.contentType} />
+                                            <div>
+                                                <h5>Answers</h5>
+                                                <div className="flex justify-between">
+                                                    {ques.answers.map((ans, index) => (
+                                                        <div>
+                                                            <p>{ans.text}</p>
+                                                            <ImageComponent index={index.toString()} imageData={ans.images.data.data} contentType={ans.images.contentType} />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    ))}
+                                </>
+                            ))}
+                            {/* <ImageComponent /> */}
+                        </>
+                    ))}
                 </div>
             </div>
         </>

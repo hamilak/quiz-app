@@ -1,106 +1,31 @@
-import { ChangeEvent, FC, FormEvent, useEffect, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import { api } from "../apiService";
-import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+// import { motion } from "framer-motion";
 import Image1 from '../assets/undraw_online_test_re_kyfx.svg'
-import Image2 from '../assets/undraw_my_answer_re_k4dv.svg'
-import Image3 from '../assets/undraw_questions_re_1fy7.svg'
-import Image4 from '../assets/undraw_quick_chat_re_bit5.svg'
-import Image5 from '../assets/undraw_quiz_re_aol4.svg'
-
-interface ImageProps {
-    contentType: string;
-    data: DataProps;
-    _id: string
-}
-
-interface DataProps {
-    data: number[];
-    type: string
-}
+import { QuizProp } from "../Types";
 
 const Home: FC = () => {
-    const [selectedFile, setSelectedFile] = useState<FileList | null>(null)
-    const [images, setImages] = useState<ImageProps[]>([])
-    const navigate = useNavigate()
-
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setSelectedFile(e.target.files!);
-    }
-
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        console.log(images)
-        console.log(selectedFile)
-        if (selectedFile) {
-            const formData = new FormData();
-            for (let i = 0; i < selectedFile.length; i++) {
-                formData.append('image', selectedFile[i]);
-            }
-            console.log(formData.getAll('image'));
-            try {
-                const response = await api.post('/uploadMultiple', formData)
-                if (response.status === 201) {
-                    window.location.reload()
-                }
-            } catch (error) {
-                console.log("Error: ", error)
-            }
-        }
-    }
-
-    const getImages = async () => {
-        try {
-            const response = await api.get('/images')
-            if (response.status === 200) {
-                console.log(response)
-                setImages(response.data)
-            }
-        } catch (error) {
-            console.log(`Error fetching images ${error}`)
-        }
-    }
+    const [quizzes, setQuizzes] = useState<QuizProp[]>([])
 
     useEffect(() => {
-        getImages()
-    }, [])
+        const getAllQuiz = async () => {
+            try {
+                const response = await api.get('/getAllQuestions')
+                if (response.status === 200) {
+                    console.log(response)
+                    setQuizzes(response.data.quiz)
+                }
+            } catch (error) {
 
-    const handleDelete = async (id: string) => {
-        try {
-            const response = await api.delete(`/deleteImage/${id}`)
-            if (response.status === 200) {
-                window.location.reload()
             }
-        } catch (error) {
-            console.log(`Error: ${error}`)
         }
-    }
 
-    const handleNavigateQuizPage = (title: string) => {
-        navigate(`/quiz`, {state: { title }})
-    }
+        getAllQuiz()
+    }, [])
 
     return (
         <>
-            {/* <Link to={'/questions'}>Set Questions</Link>
-            <div>
-                <h5>Home</h5>
-                <form onSubmit={handleSubmit}>
-                    <label>File</label>
-                    <br />
-                    <input multiple onChange={handleChange} type="file" />
-                    <br />
-                    <button type="submit">Upload</button>
-                </form>
-            </div>
-            <div>
-                <h6>Uploads</h6>
-                <div>
-                    {images.map((img) => (
-                        <ImageComponent index={img._id} imageData={img.data.data} contentType={img.contentType} handleDelete={() => handleDelete(img._id)} />
-                    ))}
-                </div>
-            </div> */}
             <div>
                 <div className="flex justify-center h-screen items-center text-center">
                     <div>
@@ -117,7 +42,7 @@ const Home: FC = () => {
                                 Welcome to the quizz app
                             </motion.h1> */}
                             <h5 className="text-2xl font-bold">
-                            Welcome to the quizz app
+                                Welcome to the quizz app
                             </h5>
                         </div>
                         <div className="flex justify-center m-4" >
@@ -126,36 +51,23 @@ const Home: FC = () => {
                         <div>
                             <p>This is a quiz app where you select an option from the list below and answer the questions.</p>
                         </div>
-                        <div className="mt-4 flex gap-4 justify-center">
-                            <div>
-                                <h5 className="font-bold">Quiz 1</h5>
-                                <div className="m-4 h-20">
-                                    <img width={100} src={Image2} alt="Quizz" />
+                        <div className="mt-4">
+                            <h5 className="text-xl font-bold">Quizzes</h5>
+                            <div className="mt-4 flex gap-4 justify-center">
+                                <div className="list-disc text-left">
+                                    {quizzes && quizzes.map((quiz) => (
+                                        <>
+                                            {Object.values(quiz.quizzes).map((item) => (
+                                                <Link to={`/quiz/${item._id}`}>
+                                                <li>{item.title.charAt(0).toUpperCase() + item.title.slice(1, item.title.length)}</li>
+                                                </Link>
+                                            ))}
+                                        </>
+                                    ))}
                                 </div>
-                                <button className="underline" onClick={() => handleNavigateQuizPage('Quiz 1')}>Start</button>
-                            </div>
-                            <div>
-                                <h5 className="font-bold">Quiz 2</h5>
-                                <div className="m-4 h-20">
-                                    <img width={100} src={Image3} alt="Quizz" />
-                                </div>
-                                <button disabled className="underline" onClick={() => handleNavigateQuizPage('Quiz 2')}>Start</button>
-                            </div>
-                            <div>
-                                <h5 className="font-bold">Quiz 3</h5>
-                                <div className="m-4 h-20">
-                                    <img width={100} src={Image4} alt="Quizz" />
-                                </div>
-                                <button disabled className="underline" onClick={() => handleNavigateQuizPage('Quiz 3')}>Start</button>
-                            </div>
-                            <div>
-                                <h5 className="font-bold">Quiz 4</h5>
-                                <div className="m-4 h-20">
-                                    <img width={100} src={Image1} alt="Quizz" />
-                                </div>
-                                <button disabled className="underline" onClick={() => handleNavigateQuizPage('Quiz 4')}>Start</button>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>

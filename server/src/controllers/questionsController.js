@@ -4,23 +4,25 @@ const fs = require('fs')
 exports.createQuestion = async(req, res) => {
     try {
         const { title, questions } = req.body
+        console.log(req.body)
         for (const question of questions) {
-            console.log("question image:", question.image)
-            if (question.image) {
-                const questionImageBuffer = fs.readFileSync(question.image.path);
-                const questionImageData = {
-                    data: questionImageBuffer,
-                    contentType: question.image.mimetype
-                };
-                mainImageBuffer = questionImageData.data;
-            }
+            // if (question.image) {
+            //     // const questionImageBuffer = fs.readFileSync(question.image.path);
+            //     const questionImageData = {
+            //         data: question.image.data.data,
+            //         contentType: question.image.mimetype
+            //     };
+            //     console.log("question image:", questionImageData)
+            //     mainImageBuffer = questionImageData.data;
+            // }
+
 
             for (const answer of question.answers) {
                 if (answer.image) {
-                    const answerImageBuffer = fs.readFileSync(answer.image.path);
+                    // const answerImageBuffer = fs.readFileSync(answer.image.path);
                     const answerImageData = {
-                        data: answerImageBuffer,
-                        contentType: answer.image.mimetype
+                        data: answer.image.data.data,
+                        contentType: answer.image.contentType
                     };
                     answerImages.push(answerImageData);
                 }
@@ -33,17 +35,22 @@ exports.createQuestion = async(req, res) => {
                 questions: questions.map(question => ({
                     description: question.description,
                     image: {
-                        data: mainImageBuffer,
-                        contentType: mainImage.mimetype
+                        data: question.image.data.data,
+                        contentType: question.image.contentType
                     },
                     answers: question.answers.map((ans, index) => ({
                         text: ans.text,
                         isCorrect: ans.isCorrect,
-                        image: ans.image ? answerImages[index] : null
+                        images: {
+                            data: ans.images.data.data,
+                            contentType: ans.images.contentType
+                        }
                     }))
                 }))
             }]
         })
+
+        console.log(question)
 
         // res.status(201).json(question);
     } catch (error) {
@@ -52,9 +59,27 @@ exports.createQuestion = async(req, res) => {
     }
 }
 
-exports.getAllQuestions = async(req, res) => {}
+exports.getAllQuestions = async(req, res) => {
+    try {
+        const quiz = await QuestionModel.find({})
+        console.log('quizzes:', quiz.length)
+        if(quiz.length === 0) {
+            return res.status(400).send({ message: 'No quiz available' })
+        }
+        res.send({ message: 'Questions', quiz })
+    } catch (error) {
+        res.status(500).send({ message: 'Error: ', error })
+    }
+}
 
-exports.getOneQuestion = async(req, res) => {}
+exports.getOneQuestion = async(req, res) => {
+    try {
+        const quizId = req.params.quizId
+        console.log('quizId')
+    } catch (error) {
+        res.status(500).send({ message: 'Error: ', error })
+    }
+}
 
 exports.updateQuestion = async(req, res) => {}
 
