@@ -1,14 +1,27 @@
-import { FC } from "react"
-import { useLocation } from "react-router-dom"
+import { FC, useEffect } from "react"
+import { useParams } from "react-router-dom"
+import { api } from "../apiService"
 
-const QuizPage:FC = () => {
-    const { state } = useLocation()
-    const title = state && state.title ? state.title : null
+const QuizPage: FC = () => {
+  const { quizId } = useParams()
 
+
+  useEffect(() => {
+    const getQuiz = async () => {
+      try {
+        const response = await api.get(`/getOneQuestion`)
+        console.log('response: ', response)
+      } catch (error) {
+        console.error(error)
+      }   
+    }
+
+    getQuiz()
+  }, [])
   return (
     <div>
-        QuizPage<br />
-        {title}
+      QuizPage<br />
+
     </div>
   )
 }

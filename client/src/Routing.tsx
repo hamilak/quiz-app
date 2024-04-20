@@ -10,7 +10,7 @@ const Routing:FC = () => {
     <Routes>
         <Route path="/" element={<Home />}></Route>
         <Route path="/questions" element={<Questions />}></Route>
-        <Route path="/quiz" element={<QuizPage />}></Route>
+        <Route path="/quiz/:quizId" element={<QuizPage />}></Route>
     </Routes>
     </BrowserRouter>
   )
