@@ -15,15 +15,17 @@ const ImageComponent: FC<ImageProps> = ({ index, imageData, contentType, handleD
     return (
         <div>
             <img width={100} src={imageUrl} alt={`Image ${index}`} />
-            <button onClick={handleDelete} style={{
-                top: 0,
-                right: 0,
-                color: 'black',
-                padding: '5px',
-                cursor: 'pointer',
-                backgroundColor: 'transparent',
-                border: 'none',
-            }}>Remove</button>
+            {handleDelete && (
+                <button onClick={handleDelete} style={{
+                    top: 0,
+                    right: 0,
+                    color: 'black',
+                    padding: '5px',
+                    cursor: 'pointer',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                }}>Remove</button>
+            )}
         </div>
     )
 }

@@ -40,5 +40,6 @@ export interface FormValidationErrors {
 }
 
 export interface QuizProp {
+    _id?: string
     quizzes: FormValueProps[]
 }
