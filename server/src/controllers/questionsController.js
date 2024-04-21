@@ -62,20 +62,27 @@ exports.createQuestion = async(req, res) => {
 exports.getAllQuestions = async(req, res) => {
     try {
         const quiz = await QuestionModel.find({})
-        console.log('quizzes:', quiz.length)
+        // console.log('quizzes:', quiz.length)
         if(quiz.length === 0) {
             return res.status(400).send({ message: 'No quiz available' })
         }
-        res.send({ message: 'Questions', quiz })
+        res.status(200).send({ message: 'Questions', quiz })
     } catch (error) {
         res.status(500).send({ message: 'Error: ', error })
     }
 }
 
 exports.getOneQuestion = async(req, res) => {
+    console.log('reach')
     try {
         const quizId = req.params.quizId
-        console.log('quizId')
+        console.log(quizId)
+        const quiz = await QuestionModel.findById(quizId)
+        console.log(quiz)
+        if(!quiz) {
+            return res.status(400).send({ message: 'No quiz found' })
+        }
+        res.status(200).send({ message: 'Quiz ', quiz })
     } catch (error) {
         res.status(500).send({ message: 'Error: ', error })
     }
